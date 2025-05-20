@@ -1,0 +1,39 @@
+Items: {
+	ExosuitDefaultHelmet: {
+		DisplayName: Exosuit Default Helmet
+		Tooltip: ""
+	}
+
+	ExosuitDefaultLegs: {
+		DisplayName: Exosuit Default Legs
+		Tooltip: ""
+	}
+
+	ExosuitDefaultChest: {
+		DisplayName: Exosuit Default Chest
+		Tooltip: ""
+	}
+}
+
+Mods.ExoSuitTest.TestNPC.DefaultName: Test NPC
+
+NPCs: {
+	TestNPC: {
+		DisplayName: Test N P C
+
+		TownNPCMood: {
+			Content: I am content.
+			NoHome: I hate not having a home.
+			FarFromHome: I am too far from home.
+			LoveSpace: I love having so much space.
+			DislikeCrowded: I dislike how crowded I am.
+			HateCrowded: I hate how crowded I am.
+			LikeNPC_Princess: I like {NPCName}.
+			Princess_LovesNPC: I like {NPCName}.
+		}
+
+		ExosuitNPC.DisplayName: ExosuitNPC
+	}
+
+	ExosuitNPC.DisplayName: Exosuit N P C
+}
