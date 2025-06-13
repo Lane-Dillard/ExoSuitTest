@@ -4,6 +4,10 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
 using Terraria.ModLoader.UI.ModBrowser;
+using Terraria.GameContent;
+using Terraria.DataStructures;
+using ExoSuitTest.Content.Players;
+using Mono.Cecil.Cil;
 
 namespace ExoSuitTest.Content.NPCs
 {
@@ -43,13 +47,15 @@ namespace ExoSuitTest.Content.NPCs
             NPC.frame.Width = 40;
             NPC.frame.Height = 56;
             NPC.friendly = true;
-            NPC.width = 40;
-            NPC.height = 60;
+            NPC.width = 35;
+            NPC.height = 40;
             NPC.damage = 1;
             NPC.defense = 5;
             NPC.lifeMax = 1000;
             NPC.knockBackResist = 0.5f;
             NPC.aiStyle = -1; // Custom AI
+
+
 
             headTexture = ModContent.Request<Texture2D>("ExoSuitTest/Content/Textures/NPCs/ExosuitDefaultHelmet_Head").Value;
             bodyTexture = ModContent.Request<Texture2D>("ExoSuitTest/Content/Textures/NPCs/ExosuitDefaultChest_Body").Value;
@@ -235,6 +241,7 @@ namespace ExoSuitTest.Content.NPCs
                 },
             };
         }
+        
 
         public override void AI()
         {
@@ -251,6 +258,38 @@ namespace ExoSuitTest.Content.NPCs
                 NPC.velocity.Y = 0f;
             }
 
+            //tracking for player in suit
+            //player control
+            if (Main.myPlayer != Main.LocalPlayer.whoAmI) return;
+
+            Player player = Main.LocalPlayer;
+            var modPlayer = player.GetModPlayer<ExosuitPlayer>();
+
+            if (modPlayer.inExosuit)
+            {
+                if (player.controlLeft)
+                {
+                    currentAnimation = "Walking";
+                    NPC.velocity.X = -3f;
+
+                }
+                else if (player.controlRight)
+                {
+                    currentAnimation = "Walking";
+                    NPC.velocity.X = +3f;
+
+                }
+                if (player.controlJump && NPC.velocity.Y == 0)
+                {
+                    currentAnimation = "Jumping/Falling";
+                    NPC.velocity.Y = -6f;
+                }
+            }
+
+
+
+
+            //will need to take out this block of code for animations to work for player control
             if (NPC.HasValidTarget && NPC.Distance(Main.player[NPC.target].Center) >= 200f)
             {
                 // Move towards player
@@ -265,6 +304,8 @@ namespace ExoSuitTest.Content.NPCs
             {
                 currentAnimation = "Idle";
             }
+            //this block up
+
 
             Vector2 ahead = NPC.position + new Vector2(NPC.velocity.X * 10, 0);
             bool hittingWall = Collision.SolidCollision(ahead, NPC.width, NPC.height);
@@ -279,6 +320,8 @@ namespace ExoSuitTest.Content.NPCs
             {
                 currentAnimation = "Jumping/Falling";
             }
+
+
 
             if (currentAnimation != previousAnimation)
             {
@@ -335,7 +378,7 @@ namespace ExoSuitTest.Content.NPCs
             Vector2 origin = new Vector2(frameData.BodySource.Width / 2f, frameData.BodySource.Height / 2f);
             float scale = 1f;
 
-            Vector2 offset = new Vector2(0f, 6f);
+            Vector2 offset = new Vector2(0f, -6f);
             Vector2 backArmOffset = new Vector2(0f, 8f);
             Vector2 headOffset = new Vector2(0f, 1f);
 
@@ -346,7 +389,17 @@ namespace ExoSuitTest.Content.NPCs
             spriteBatch.Draw(headTexture, drawPos + headOffset + offset, frameData.HeadSource, drawColor, rotation, origin, scale, effects, 0f);
             spriteBatch.Draw(bodyTexture, drawPos + offset, frameData.FrontArmSource, drawColor, rotation, origin, scale, effects, 0f);
 
+
+            spriteBatch.Draw(TextureAssets.MagicPixel.Value, new Rectangle(
+                (int)Entity.position.X - (int)screenPos.X,
+                (int)Entity.position.Y - (int)screenPos.Y,
+                Entity.width,
+                Entity.height
+                ), Color.Red * 0.5f);
+
+
             return false; // We handled drawing
         }
+
     }
 }
