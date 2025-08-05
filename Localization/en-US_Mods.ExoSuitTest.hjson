@@ -37,3 +37,5 @@ NPCs: {
 
 	ExosuitNPC.DisplayName: Exosuit N P C
 }
+
+"Keybinds.Enter Exosuit.DisplayName": Enter  Exosuit

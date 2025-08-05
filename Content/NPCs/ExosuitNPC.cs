@@ -4,6 +4,10 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
 using Terraria.ModLoader.UI.ModBrowser;
+using Terraria.GameContent;
+using Terraria.DataStructures;
+using ExoSuitTest.Content.Players;
+using Mono.Cecil.Cil;
 
 namespace ExoSuitTest.Content.NPCs
 {
@@ -43,13 +47,15 @@ namespace ExoSuitTest.Content.NPCs
             NPC.frame.Width = 40;
             NPC.frame.Height = 56;
             NPC.friendly = true;
-            NPC.width = 40;
-            NPC.height = 60;
+            NPC.width = 18;
+            NPC.height = 40;
             NPC.damage = 1;
             NPC.defense = 5;
             NPC.lifeMax = 1000;
             NPC.knockBackResist = 0.5f;
             NPC.aiStyle = -1; // Custom AI
+
+
 
             headTexture = ModContent.Request<Texture2D>("ExoSuitTest/Content/Textures/NPCs/ExosuitDefaultHelmet_Head").Value;
             bodyTexture = ModContent.Request<Texture2D>("ExoSuitTest/Content/Textures/NPCs/ExosuitDefaultChest_Body").Value;
@@ -234,23 +240,204 @@ namespace ExoSuitTest.Content.NPCs
                     HeadSource = new Rectangle(0, frameHeight * 5, frameWidth, frameHeight),
                 },
             };
+
+            ExosuitAnimations["Falling"] = new ExosuitFrameData[]
+            {
+                new ExosuitFrameData
+                {
+                    BodySource = new Rectangle(0, 0, frameWidth, frameHeight),
+                    FrontArmSource = new Rectangle(frameWidth * 2, frameHeight, frameWidth, frameHeight),
+                    BackArmSource = new Rectangle(frameWidth * 2, frameHeight * 3, frameWidth, frameHeight),
+                    LegSource = new Rectangle(0, frameHeight * 5, frameWidth, frameHeight),
+                    HeadSource = new Rectangle(0, frameHeight * 5, frameWidth, frameHeight),
+                },
+            };
         }
+        
 
         public override void AI()
         {
+            /*
             NPC.TargetClosest();
+            */
             NPC.velocity.X = 0;
+
+            /*
             if (!NPC.collideY)
             {
                 NPC.velocity.Y += 0.3f;
-                if (NPC.velocity.Y > 3f)
-                    NPC.velocity.Y = 3f;
+
             }
             else
             {
                 NPC.velocity.Y = 0f;
             }
+            */
 
+
+            for (int i = 0; i <= 16; i++)
+            {
+                Vector2 testPos = new Vector2(NPC.position.X, NPC.position.Y - i);
+                if (!Collision.SolidCollision(testPos, NPC.width, NPC.height))
+                {
+                    NPC.position.Y -= i;
+                    break;
+                }
+            }
+
+
+            //tracking for player in suit
+            //player control
+            if (Main.myPlayer != Main.LocalPlayer.whoAmI) return;
+
+            Player player = Main.LocalPlayer;
+            var modPlayer = player.GetModPlayer<ExosuitPlayer>();
+
+            //the three things to track to give jumping a better feel
+            bool onGround = NPC.velocity.Y == 0f && NPC.collideY;
+            bool wasJumping = false;
+            bool jumpHeld = false;
+            bool jumpingInAir = false;
+
+            if (previousAnimation == "Jumping/Falling")
+            {
+                jumpingInAir = true;
+            }
+
+
+            if (modPlayer.inExosuit)
+            {
+                
+                if (NPC.velocity.Y == 0 && NPC.velocity.X == 0)
+                {
+                    currentAnimation = "Idle";
+                }
+
+                if (player.controlLeft)
+                {
+                    currentAnimation = "Walking";
+                    NPC.velocity.X = -3f;
+
+                }
+                else if (player.controlRight)
+                {
+                    currentAnimation = "Walking";
+                    NPC.velocity.X = +3f;
+
+                }
+                /*
+                if (player.controlJump && NPC.velocity.Y == 0)
+                {
+                    currentAnimation = "Jumping/Falling";
+                    NPC.velocity.Y = -6f;
+                }
+                */
+
+                bool jumpReleased = jumpHeld && !player.controlJump;
+                jumpHeld = player.controlJump;
+
+                if (player.controlJump)
+                {
+
+
+
+
+                    //tip don't do >= or <= for these type of things
+                    if (modPlayer.jumpingButton < 30 && onGround)
+                    {
+                        NPC.velocity.Y = -6f;
+                        modPlayer.jumpingButton++;
+                        jumpingInAir = true;
+                        Main.NewText($"{modPlayer.jumpingButton}");
+                        currentAnimation = "Jumping/Falling";
+                    }
+                    else if (modPlayer.jumpingButton < 30 && jumpingInAir && !onGround)
+                    {
+                        NPC.velocity.Y = -5f;
+                        modPlayer.jumpingButton++;
+                        jumpingInAir = true;
+                        Main.NewText($"{modPlayer.jumpingButton}");
+                        currentAnimation = "Jumping/Falling";
+                    }
+
+                    if (jumpReleased)
+                    {
+                        
+                        modPlayer.jumpingButton = 30;
+                        Main.NewText($"{modPlayer.jumpingButton}");
+                    }
+
+
+                    /*
+                    if (modPlayer.jumpingButton > 30)
+                    {
+                        NPC.velocity.Y = +4f;
+                        Main.NewText($"{modPlayer.jumpingButton}");
+                    }
+                    */
+
+
+                    if (onGround)
+                    {
+                        modPlayer.jumpingButton = 0;
+                        Main.NewText($"{modPlayer.jumpingButton}");
+                    }
+                }
+
+                /*
+                if (player.controlJump)
+                {
+                    NPC.velocity.Y = -6.5f;
+                    wasJumping = true;
+                    jumpHeld = true;
+                    modPlayer.jumpingButton += 1;
+                    if (modPlayer.jumpingButton >= 30)
+                    {
+                        NPC.velocity.Y += 4f;
+                    }
+                    Main.NewText($"{modPlayer.jumpingButton}");
+                } else
+                {
+                    modPlayer.jumpingButton = 0;
+                }
+
+                if (modPlayer.jumpingButton >= 30)
+                {
+                    NPC.velocity.X += 0;
+                    NPC.velocity.Y += 4f;
+                    
+                }
+
+                if (!player.controlJump)
+                {
+                    jumpHeld = false;
+                }
+
+                if (!jumpHeld && NPC.velocity.Y < 0f)
+                {
+                    NPC.velocity.Y *= 0.5f;
+                }
+
+                if (!onGround)
+                {
+                    NPC.velocity.Y += 0.3f;
+                    if (NPC.velocity.Y > 10f)
+                    {
+                        NPC.velocity.Y = 10f;
+                    }
+                } else
+                {
+                    wasJumping = false;
+                }
+                */
+
+            }
+
+
+
+
+            //will need to take out this block of code for animations to work for player control
+            /*
             if (NPC.HasValidTarget && NPC.Distance(Main.player[NPC.target].Center) >= 200f)
             {
                 // Move towards player
@@ -265,7 +452,10 @@ namespace ExoSuitTest.Content.NPCs
             {
                 currentAnimation = "Idle";
             }
+            */
+            //this block up
 
+            /*
             Vector2 ahead = NPC.position + new Vector2(NPC.velocity.X * 10, 0);
             bool hittingWall = Collision.SolidCollision(ahead, NPC.width, NPC.height);
 
@@ -274,11 +464,16 @@ namespace ExoSuitTest.Content.NPCs
                 NPC.velocity.Y = -6f;
                 currentAnimation = "Jumping/Falling";
             }
+            */
             
-            if (NPC.velocity.Y != 0)
+
+            /*
+            if (NPC.velocity.Y < 0)
             {
                 currentAnimation = "Jumping/Falling";
             }
+            */
+
 
             if (currentAnimation != previousAnimation)
             {
@@ -335,7 +530,7 @@ namespace ExoSuitTest.Content.NPCs
             Vector2 origin = new Vector2(frameData.BodySource.Width / 2f, frameData.BodySource.Height / 2f);
             float scale = 1f;
 
-            Vector2 offset = new Vector2(0f, 6f);
+            Vector2 offset = new Vector2(0f, -6f);
             Vector2 backArmOffset = new Vector2(0f, 8f);
             Vector2 headOffset = new Vector2(0f, 1f);
 
@@ -346,7 +541,17 @@ namespace ExoSuitTest.Content.NPCs
             spriteBatch.Draw(headTexture, drawPos + headOffset + offset, frameData.HeadSource, drawColor, rotation, origin, scale, effects, 0f);
             spriteBatch.Draw(bodyTexture, drawPos + offset, frameData.FrontArmSource, drawColor, rotation, origin, scale, effects, 0f);
 
+
+            spriteBatch.Draw(TextureAssets.MagicPixel.Value, new Rectangle(
+                (int)Entity.position.X - (int)screenPos.X,
+                (int)Entity.position.Y - (int)screenPos.Y,
+                Entity.width,
+                Entity.height
+                ), Color.Red * 0.5f);
+
+
             return false; // We handled drawing
         }
+
     }
 }
