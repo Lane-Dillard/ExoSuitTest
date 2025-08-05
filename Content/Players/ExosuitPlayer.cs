@@ -18,6 +18,11 @@ namespace ExoSuitTest.Content.Players
         public bool inExosuit = false;
         public NPC ExosuitNPC;
         public bool cameraOverride = false;
+        public int jumpingButton = 0;
+        public int jumpLock = 0;
+        public bool jumpHoldAllowed = true;
+
+
 
         public override void ProcessTriggers(TriggersSet triggersSet)
         {
